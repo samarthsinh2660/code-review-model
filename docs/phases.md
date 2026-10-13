@@ -1,6 +1,6 @@
 # VulnScope project phases
 
-This roadmap turns [the project idea](idea.md) into work that can be completed and reviewed one phase at a time. The initial path uses C/C++ for the first end-to-end experiment. Dataset feasibility may change the first language, but that decision must be recorded in Phase 1.
+This roadmap turns [the project idea](idea.md) into work that can be completed and reviewed one phase at a time. The [architecture](architecture.md) explains the components and the [ML methodology](ml-methodology.md) fixes the research protocol. The initial path uses C/C++ for the first end-to-end experiment. Dataset feasibility may change the first language, but that decision must be recorded in Phase 1.
 
 ## Working rules
 
@@ -9,6 +9,8 @@ This roadmap turns [the project idea](idea.md) into work that can be completed a
 - Preserve source, repository, commit, license, and label provenance for every usable sample.
 - Keep related functions and vulnerable/fixed pairs together when splitting data. Fit learned preprocessing on training data only; use validation data for tuning and leave the test set untouched until final evaluation.
 - Treat every prediction as a review lead. An unflagged function is not proven safe.
+- Aim for a group-aware 70/15/15 train/validation/test split when the data supports it; preserve natural class prevalence in validation/test and report actual counts. Keep an external or later-period evaluation separate.
+- Establish an unweighted baseline before trying train-only class weights. Select model settings and an operating threshold on validation data, then freeze them before the final test.
 - Finish each phase with its stated evidence and review its results before starting the next one. Do not claim a target accuracy in advance.
 
 ## Phase 0 — Project foundation
@@ -25,7 +27,7 @@ This roadmap turns [the project idea](idea.md) into work that can be completed a
 
 **Goal:** Select one primary dataset and understand what its labels actually mean.
 
-**Work:** Audit the C/C++ candidates in `idea.md` first. Check access and redistribution terms, fixed release or version, schema, language coverage, positive/negative label definitions, missing values, class balance, duplicate and near-duplicate rates, and whether functions and source locations can be recovered. Inspect a sample manually. Record whether real-world examples can be reserved for external evaluation. If C/C++ data is unsuitable, audit the JS/TS candidate before changing the first-language order.
+**Work:** Audit the C/C++ candidates in `idea.md` first. Check access and redistribution terms, fixed release or version, schema, language coverage, positive/negative label definitions, missing values, class balance, conflicting labels, duplicate and near-duplicate rates, and whether functions and source locations can be recovered. Inspect a sample manually for label-bearing filenames/comments and template shortcuts. Record whether real-world examples can be reserved for external evaluation. If C/C++ data is unsuitable, audit the JS/TS candidate before changing the first-language order.
 
 **Deliverables:** `docs/dataset-audit.md`, a small repeatable inspection script, source/version/hash records, retained-count estimates, and a written choice of first dataset and language.
 
@@ -35,17 +37,17 @@ This roadmap turns [the project idea](idea.md) into work that can be completed a
 
 **Goal:** Produce repeatable function-level examples and feature matrices for the chosen dataset.
 
-**Work:** Ingest and validate records; preserve provenance; extract functions and locations; detect exact and near duplicates; group related examples; create train, validation, and test partitions; then fit a tokenizer and lexical feature vocabulary on training data only. Track rejected records and parsing failures.
+**Work:** Ingest and validate records; preserve provenance; extract functions and locations; detect exact and near duplicates; group related examples, vulnerable/fixed pairs, and generated variants; create group-aware train, validation, and test partitions; then fit a tokenizer, capped lexical vocabulary, and any scaling on training data only. Exclude provenance and label-derived fields from features. Track rejected records, parsing failures, per-split counts, and class prevalence.
 
 **Deliverables:** Versioned data-preparation configuration, manifest of retained and rejected records, split summaries, lexical feature matrices, and tests for labels, grouping, parsing failures, and train-only fitting.
 
-**Exit gate:** A clean run produces the same record counts and split assignments. Duplicate families and vulnerable/fixed pairs cannot cross split boundaries.
+**Exit gate:** A clean run produces the same record counts and split assignments. Duplicate families and vulnerable/fixed pairs cannot cross split boundaries; train-only preprocessing and usable class coverage are verified.
 
 ## Phase 3 — First custom model and baseline evaluation
 
 **Goal:** Train a transparent binary classifier on the first language.
 
-**Work:** Implement logistic regression with NumPy: forward pass, binary cross-entropy, analytical gradients, optimizer loop, regularization where useful, thresholding, and artifact save/load. Check gradients numerically and use validation data to choose the operating threshold. Evaluate precision, recall, F1, PR-AUC, ROC-AUC, confusion matrix, and false-positive/false-negative rates.
+**Work:** Implement logistic regression with NumPy: numerically stable forward pass and binary cross-entropy, analytical gradients, optimizer loop, L2 comparison, thresholding, and artifact save/load. Check gradients numerically. Train an unweighted baseline, then compare train-derived class weighting if needed. Choose the operating threshold on validation data. Evaluate precision, recall, F1, average precision/PR-AUC, ROC-AUC, confusion matrix, class prevalence, and false-positive/false-negative rates.
 
 **Deliverables:** Custom model and training code, model persistence tests, reproducible experiment configuration, validation curves, and a baseline results table.
 
@@ -55,7 +57,7 @@ This roadmap turns [the project idea](idea.md) into work that can be completed a
 
 **Goal:** Test whether syntax structure and a more expressive model help.
 
-**Work:** Extract explicit AST-derived features with a language parser. Implement a small NumPy MLP with forward pass, backpropagation, minibatches, validation monitoring, and checkpointing. Compare logistic regression and MLP on lexical features, AST features, and their combination where feasible.
+**Work:** Extract explicit AST-derived features with a language parser. Implement a small NumPy MLP with forward pass, backpropagation, minibatches, L2 regularization, validation-loss early stopping, and checkpointing. Compare logistic regression and MLP on lexical features, AST features, and their combination using fixed splits. Inspect training/validation gaps and ablate code-length features.
 
 **Deliverables:** Parser/AST feature tests, custom MLP and gradient tests, experiment configurations, comparison table, and error analysis.
 
@@ -65,7 +67,7 @@ This roadmap turns [the project idea](idea.md) into work that can be completed a
 
 **Goal:** Learn whether the detector works beyond near-duplicate or familiar repositories.
 
-**Work:** Evaluate on held-out repositories, a later time period, or a distinct real-world dataset when the audited data permits it. Compare individual models with equal-weight soft voting and validation-tuned voting. Attempt stacking only if out-of-fold base predictions can be generated without leakage. Check score calibration before describing a score as a probability of real-world risk.
+**Work:** Evaluate on held-out repositories, a later time period, or a distinct real-world dataset when the audited data permits it; report synthetic and real-world results separately. Compare individual models with equal-weight soft voting and validation-tuned voting. Attempt stacking only if out-of-fold base predictions can be generated without leakage. Inspect precision/recall at the frozen threshold, false findings per scan, and score calibration before describing a score as a probability of real-world risk.
 
 **Deliverables:** Generalization report, per-source and per-CWE breakdowns where sample sizes allow, individual-versus-ensemble table, threshold rationale, and representative false positives and false negatives.
 
@@ -85,7 +87,7 @@ This roadmap turns [the project idea](idea.md) into work that can be completed a
 
 **Goal:** Add JS and TS through their own audited data and language adapter.
 
-**Work:** Audit the JsVul release and any supplementary benchmark before ingestion. Add function extraction and lexical/AST features for both languages; document TypeScript-specific behavior. Train and evaluate separate JS and TS baselines first, then test a combined model if the data supports it. Route inference only to models validated for the detected language.
+**Work:** Audit the JsVul release and any supplementary benchmark before ingestion, including temporal split, pair overlap, and source-specific label definitions. Add function extraction and lexical/AST features for both languages; document TypeScript-specific behavior. Train and evaluate separate JS and TS baselines first, then test a combined model if the data supports it. Route inference only to models validated for the detected language and feature version.
 
 **Deliverables:** JS/TS audit, adapters, tests, per-language artifacts, metrics, and scanner support.
 
@@ -95,7 +97,7 @@ This roadmap turns [the project idea](idea.md) into work that can be completed a
 
 **Goal:** Add Go only after function-level examples and labels can be justified.
 
-**Work:** Use Go advisories as leads to affected repositories and fixes, not as automatic function labels. Link versions, commits, and changed functions; retain provenance and manually review a sample. Add a Go parser/feature adapter, train a Go-specific baseline, and evaluate it on held-out repositories where possible.
+**Work:** Use Go advisories as leads to affected repositories and fixes, not as automatic function labels. Link versions, commits, and changed functions; retain provenance and manually review a sample. Group patches and related function versions before splitting. Add a Go parser/feature adapter, train a Go-specific baseline, and evaluate it on held-out repositories where possible.
 
 **Deliverables:** Go label-construction and audit report, Go dataset manifest, adapter tests, model artifact, metrics, and scanner support if results warrant it.
 

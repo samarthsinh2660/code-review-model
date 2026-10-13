@@ -90,7 +90,7 @@ Important: Juliet is synthetic. High performance on Juliet alone does not demons
 |---|---|---|---|
 | JsVul | Function-level vulnerable/fixed JavaScript and TypeScript dataset and curation pipeline, assembled from multiple sources with deduplication and temporal splits | Main candidate for JS/TS experiments | https://github.com/jsvul/jsvul |
 | JsVul dataset on Zenodo | Dataset release associated with the JsVul project | Download a fixed release for reproducibility | https://doi.org/10.5281/zenodo.18195838 |
-| SecBench.JS | JavaScript security benchmark cases covering categories such as code/command injection, path traversal, prototype pollution, and ReDoS | Targeted evaluation and supplementary examples; check labels and licensing | https://github.com/SecBench/SecBench.js |
+| SecBench.JS | JavaScript security benchmark cases covering categories such as code/command injection, path traversal, prototype pollution, and ReDoS | Targeted evaluation and supplementary examples; check labels and licensing | https://github.com/cristianstaicu/SecBench.js |
 | NVD | Public CVE records and references; generally not source-code samples by themselves | Metadata enrichment and linking vulnerabilities to fixes | https://nvd.nist.gov/ |
 
 JsVul combines sources and has a documented acquisition/curation workflow. Prefer its published dataset release for reproducible initial experiments rather than immediately attempting to recreate every upstream source.
@@ -589,7 +589,7 @@ The project is successful when it has:
 - Microsoft CodeXGLUE / Devign: https://github.com/microsoft/CodeXGLUE
 - JsVul source and pipeline: https://github.com/jsvul/jsvul
 - JsVul Zenodo release: https://doi.org/10.5281/zenodo.18195838
-- SecBench.JS: https://github.com/SecBench/SecBench.js
+- SecBench.JS: https://github.com/cristianstaicu/SecBench.js
 - Go Vulnerability Database documentation: https://go.dev/doc/security/vuln/database
 - Go vulnerability database bulk archive: https://vuln.go.dev/vulndb.zip
 - OSV: https://osv.dev/

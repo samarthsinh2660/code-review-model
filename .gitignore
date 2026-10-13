@@ -1,0 +1,23 @@
+# Python environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+dist/
+build/
+
+# Datasets and generated model outputs
+data/raw/
+data/interim/
+data/processed/
+artifacts/models/
+artifacts/tmp/
+experiments/results/
+
+# Local configuration and editor files
+.env
+.env.*
+.idea/
+.vscode/

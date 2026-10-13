@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vulnscope"
+version = "0.1.0"
+description = "Research prototype for custom-trained source-code vulnerability detection"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "License to be selected before distribution" }
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
