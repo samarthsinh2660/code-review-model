@@ -9,11 +9,11 @@
 | [Python](https://www.python.org/downloads/) and [venv](https://docs.python.org/3/library/venv.html) | Training, data pipeline, CLI, and optional API | Python 3.12.3 is installed locally; project version policy still needs to be pinned |
 | [NumPy](https://numpy.org/doc/stable/) | Array operations for classifiers implemented by us | Selected; package/version not installed or pinned by this repo |
 | [pytest](https://docs.pytest.org/en/stable/) | Tests for data, gradients, persistence, and inference | Selected; package/version not installed or pinned by this repo |
-| [Git](https://git-scm.com/doc) | Versioned code and experiment configurations | Installed locally; this project directory is not yet a Git repository |
-| [NIST Juliet C/C++ 1.3](https://samate.nist.gov/SARD/test-suites/112) | First candidate for a controlled C/C++ benchmark | Source page verified; **not downloaded or audited** |
+| [Git](https://git-scm.com/doc) | Versioned code and experiment configurations | Installed locally; this project directory now has a Git repository |
+| [NIST Juliet C/C++ 1.3](https://samate.nist.gov/SARD/test-suites/112) | First candidate for a controlled C/C++ benchmark | Official archive present, SHA-256 and ZIP integrity verified; function labels and duplicates still need audit (see [initial audit](dataset-audit.md)) |
 | Storage for raw data, processed data, and artifacts | Keep immutable source copies and experiment outputs outside Git | About 157 GiB available on the local project filesystem at check time; actual dataset footprint must be measured |
 
-**First acquisition order:** create a provenance record, download one fixed Juliet release, verify its published SHA-256, inspect its layout and labels, then decide whether it is the primary training source. The [NIST page](https://samate.nist.gov/SARD/test-suites/112) lists a 146 MB download and SHA-256 `ada9d7e1c323d283446df3f55bdee0d00bda1fed786785fe98764d58688f38eb`; these describe the upstream archive, not a locally verified copy. Its page states public-domain/CC0 terms. Do not download every candidate before Phase 1 chooses what is usable.
+**First acquisition status:** The fixed Juliet release is now in ignored `data/raw/`; its SHA-256 matches the value `ada9d7e1c323d283446df3f55bdee0d00bda1fed786785fe98764d58688f38eb` on the [NIST page](https://samate.nist.gov/SARD/test-suites/112). The page states public-domain/CC0 terms. The [Juliet guide](https://samate.nist.gov/SARD/downloads/documents/Juliet_Test_Suite_v1.2_for_C_Cpp_-_User_Guide.pdf) describes wrappers, helper functions, and bad-only cases, and the archive manifest supplies flaw lines. See [the measured audit](dataset-audit.md). Function labels still need parser-backed inspection before training.
 
 ## 2. Dataset and advisory sources
 
@@ -69,7 +69,7 @@ For every dataset or downloaded artifact, record: source URL, exact release or c
 
 ## 7. Open checks before implementation uses external data
 
-1. Confirm Juliet's downloaded archive hash and inspect whether its `bad`/`good` naming maps cleanly to function-level labels and groups.
+1. Juliet's archive hash and manifest line bounds are verified. Map flaw lines to parsed functions and audit safe counterparts before assigning function-level labels or groups.
 2. Confirm Big-Vul export accessibility, exact file schema, project/commit metadata, and the terms covering the chosen copy.
 3. Confirm the JsVul Zenodo release resolves, identify its data license, and inspect the JSONL schema; the linked record was inaccessible during this inventory.
 4. Decide whether SecBench.JS cases are suitable for static function-level evaluation; executable exploit cases may need different scoring.

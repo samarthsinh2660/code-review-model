@@ -51,9 +51,9 @@ There are two paths: **offline training**, which can take time and uses labelled
 Every parser or dataset adapter produces a common **function record** containing at least:
 
 - `language`, `file_path`, `function_name` when available, `start_line`, `end_line`, and `source_code`;
-- `source_id`, `repository`, `commit`, `dataset_version`, and license/provenance fields when the record comes from training data;
+- `source_id`, `repository`, `commit`, `dataset_version`, and `license_id`/provenance fields when the record comes from training data;
 - `label` only for verified labelled examples (`1` or `0`); an ordinary scanned function has **no label**;
-- `group_id` linking near duplicates, generated variants, and vulnerable/fixed versions that must remain in the same split;
+- `group_id` linking near duplicates, generated variants, and vulnerable/fixed versions that must remain in the same split (initially a provisional source-based ID, finalized before splitting);
 - parse status and reason if the function could not be extracted reliably.
 
 Labels are source-specific claims. A missing label is never converted to `0`. A dataset may supply code that has already been extracted into functions; its adapter still has to verify the label and location fields. A repository scan extracts functions directly from files. Both paths then enter the same feature interface.

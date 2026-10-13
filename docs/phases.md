@@ -27,7 +27,7 @@ This roadmap turns [the project idea](idea.md) into work that can be completed a
 
 **Goal:** Select one primary dataset and understand what its labels actually mean.
 
-**Work:** Audit the C/C++ candidates in `idea.md` first. Check access and redistribution terms, fixed release or version, schema, language coverage, positive/negative label definitions, missing values, class balance, conflicting labels, duplicate and near-duplicate rates, and whether functions and source locations can be recovered. Inspect a sample manually for label-bearing filenames/comments and template shortcuts. Record whether real-world examples can be reserved for external evaluation. If C/C++ data is unsuitable, audit the JS/TS candidate before changing the first-language order.
+**Work:** Audit the C/C++ candidates in `idea.md` first, continuing [the initial source review](dataset-audit.md). Check access and redistribution terms, fixed release or version, schema, language coverage, positive/negative label definitions, missing values, class balance, conflicting labels, duplicate and near-duplicate rates, and whether functions and source locations can be recovered. For Juliet, validate `C/manifest.xml` flaw lines against parsed function spans and audit safe counterparts; do not treat every function lacking a flaw line as negative. Inspect a sample manually for label-bearing filenames/comments, template shortcuts, bad-only cases, and wrappers whose flaw is in another function or file. Record whether real-world examples can be reserved for external evaluation. If C/C++ data is unsuitable, audit the JS/TS candidate before changing the first-language order.
 
 **Deliverables:** `docs/dataset-audit.md`, a small repeatable inspection script, source/version/hash records, retained-count estimates, and a written choice of first dataset and language.
 
@@ -117,6 +117,6 @@ This roadmap turns [the project idea](idea.md) into work that can be completed a
 
 CWE classification, line or region ranking, patch comparison, control/data-flow features, a custom tree learner, GitHub pull-request integration, a web interface, user feedback, and LLM-assisted explanations are separate extensions. Each needs its own data, success criteria, and evaluation before it is described as supported.
 
-## Immediate next step
+## Current next step
 
-Start Phase 0 with a small implementation plan for the project skeleton and record formats. Then perform Phase 1's dataset audit before choosing a dataset-specific training pipeline.
+Phase 0 is complete and Phase 1 is underway. The Juliet archive and a 20-file function-span sample have been audited. Next, broaden parser and label coverage across case styles, define a defensible negative-label rule, measure retained and duplicate function counts, and choose the first dataset before starting the Phase 2 pipeline.

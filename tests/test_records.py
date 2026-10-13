@@ -29,7 +29,10 @@ class FunctionRecordTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             FunctionRecord(**fields)
-        record = FunctionRecord(**fields, source_id="juliet:case-1", group_id="family-1")
+        record = FunctionRecord(
+            **fields, source_id="juliet:case-1", group_id="family-1",
+            dataset_version="juliet-1.3", license_id="CC0-1.0",
+        )
         self.assertEqual(record.label, 1)
 
     def test_invalid_label_and_source_span_are_rejected(self) -> None:

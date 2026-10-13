@@ -49,6 +49,7 @@ class FunctionRecord:
     repository: str | None = None
     commit: str | None = None
     dataset_version: str | None = None
+    license_id: str | None = None
 
     def __post_init__(self) -> None:
         _validate_language(self.language)
@@ -62,6 +63,8 @@ class FunctionRecord:
                 raise ValueError("label must be 0, 1, or None")
             _require_text(self.source_id, "source_id for labelled record")
             _require_text(self.group_id, "group_id for labelled record")
+            _require_text(self.dataset_version, "dataset_version for labelled record")
+            _require_text(self.license_id, "license_id for labelled record")
 
 
 @dataclass(frozen=True, slots=True)
