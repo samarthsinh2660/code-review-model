@@ -119,4 +119,4 @@ CWE classification, line or region ranking, patch comparison, control/data-flow 
 
 ## Current next step
 
-Phase 0 is complete and Phase 1 is underway. The Juliet archive and a 20-file function-span sample have been audited. Next, broaden parser and label coverage across case styles, define a defensible negative-label rule, measure retained and duplicate function counts, and choose the first dataset before starting the Phase 2 pipeline.
+Phases 0–2 are implemented in the working tree. Phase 3 produced a [custom logistic baseline and leakage finding](phase-3-logistic.md), and Phase 4's [AST/MLP comparison](phase-4-structural.md) did not improve validation ranking. [Phase 5](phase-5-generalization.md) found that the Juliet model transfers poorly to Big-Vul. A [new Big-Vul C baseline](phase-5b-real-world-baseline.md) reached AP 0.247 on fresh unseen-project functions, but flagged 16% of them and still needs label, near-duplicate, rights, stability, and external-source checks. The detector remains disabled and Phase 6's scanner gate is not met.

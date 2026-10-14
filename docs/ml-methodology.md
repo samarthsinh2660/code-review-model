@@ -1,6 +1,6 @@
 # VulnScope ML methodology
 
-**Status:** Proposed research protocol, 2026-10-13. This document defines the first experiments before data or test results can influence the design. It complements the [architecture](architecture.md), [phases](phases.md), and [resource inventory](resources.md). The exact first dataset remains subject to its audit.
+**Status:** Research protocol recorded 2026-10-13 before model training. The first Juliet subset has since been audited and run; see the [dataset audit](dataset-audit.md) and [phase reports](phases.md) for measured results and the declaration-leakage correction. This document complements the [architecture](architecture.md) and [resource inventory](resources.md).
 
 ## 1. Research findings that shape the design
 

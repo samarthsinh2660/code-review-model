@@ -2,10 +2,23 @@
 
 import unittest
 
-from scripts.audit_juliet_functions import function_bodies, map_flaw_lines
+from scripts.audit_juliet_functions import function_bodies, map_flaw_lines, select_paths
 
 
 class FunctionAuditTests(unittest.TestCase):
+    def test_all_01_selection_excludes_other_styles_and_support_files(self):
+        names = [
+            "C/testcases/CWE2/x_01.cpp",
+            "C/testcases/CWE1/y_02.c",
+            "C/testcases/CWE1/x_01.c",
+            "C/testcasesupport/z_01.c",
+            "C/testcases/CWE1/x_01.c",
+        ]
+        self.assertEqual(select_paths(names, 1, all_01=True), [
+            "C/testcases/CWE1/x_01.c",
+            "C/testcases/CWE2/x_01.cpp",
+        ])
+
     def test_source_offset_rejects_header_declaration(self):
         source = b"void bad() {\n  int x = 1;\n}\n"
         ast = {

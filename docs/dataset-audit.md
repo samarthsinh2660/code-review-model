@@ -1,6 +1,6 @@
 # First dataset audit: C/C++ candidates
 
-**Status:** Archive-level audit and a small function-span feasibility sample completed 2026-10-13. The official Juliet ZIP is present and verified. Full-suite function counts after filtering, function-level duplicate rates, parser coverage, and defensible positive/negative counts have **not** been measured. The dataset has not been chosen for training.
+**Status:** The official Juliet archive is verified, and a conservative `_01` paired subset has been audited, prepared, and used for exploratory training. Big-Vul supplied an independent real-world transfer check; the current model failed that check and is not approved for scanning. The full Juliet suite remains unaudited. The detailed Juliet counts and label rules below apply only to the retained `_01` subset.
 
 ## Candidate A: NIST Juliet C/C++ 1.3
 
@@ -53,6 +53,32 @@ This supports using **manifest flaw lines** as candidate positive locations. The
 
 The archive tool is [scripts/audit_juliet_archive.py](../scripts/audit_juliet_archive.py). It streams each member and does not execute or extract test code. Counts are reproducible from this exact release hash.
 
+### Phase 1 first-dataset decision: constrained `_01` pairs
+
+We audited **all 1,666 `_01` C/C++ source files** in the verified archive using [the function-span audit](../scripts/audit_juliet_functions.py). This is a subset of Juliet's 101,231 testcase source files, selected to avoid the additional cross-file call-chain problem during the first experiment. It is not a full Juliet parser-coverage result.
+
+```sh
+python3 -m scripts.audit_juliet_functions data/raw/2017-10-01-juliet-test-suite-for-c-cplusplus-v1-3.zip --all-01 --expected-sha256 ada9d7e1c323d283446df3f55bdee0d00bda1fed786785fe98764d58688f38eb > data/processed/juliet_01_function_audit.json
+python3 -m scripts.assess_juliet_01 data/raw/2017-10-01-juliet-test-suite-for-c-cplusplus-v1-3.zip data/processed/juliet_01_function_audit.json > data/processed/juliet_01_pair_assessment.json
+```
+
+| Measurement | Value | Meaning |
+|---|---:|---|
+| `_01` source files | 1,666 | 1,258 C and 408 C++ |
+| Parsed | 1,423 | 1,059 C and 364 C++ |
+| Parse failures | 243 | 199 C and 44 C++; at least 205 show unavailable Windows headers/types in their first error |
+| Function definitions in parsed files | 4,900 | Not all labelled or suitable for training |
+| Manifest flaw lines in parsed files | 1,464 | All map uniquely; 1,459 in bodies, 5 on signatures |
+| Retained direct pairs | 549 | One manifest-annotated `bad` definition and one `goodB2G` fixed-sink definition with a `FIX:` marker in the same file |
+| Retained candidate functions | 1,098 | Exactly 549 positives and 549 negatives; 397 C pairs, 152 C++ pairs across 26 CWEs |
+| Rejected files by rule | 243 parse failures; 835 missing/ambiguous fixed-sink counterpart; 39 unclear positive role | These are counts for `_01` only; no missing label was turned into safe code |
+| Exact duplicate retained function bodies | 14 extra copies | Raw byte equality; near duplicates remain to be measured |
+| Conflicting labels on byte-identical code | 0 | Within the retained candidate set |
+
+We manually checked retained CWE121 array bounds, CWE190 overflow, CWE401 memory leak, and CWE762 mismatched allocation/free pairs. In each, the manifest points at the bad definition and the fixed-sink counterpart contains the local guard or correct operation. This spot check supports the **candidate** rule, but cannot establish semantic correctness for all 549 pairs. The assessment [script](../scripts/assess_juliet_01.py) records each pair's source lines and byte hash; its generated JSON is ignored by Git.
+
+**Decision:** Use this constrained Juliet `_01` pair subset for the first C/C++ *synthetic* model experiment, subject to Phase 2 duplicate-family grouping and source normalization. Group whole pairs and, conservatively, all pairs from the same CWE together for the first split; then check for exact/near duplicates crossing those groups. With 26 represented CWEs, a grouped train/validation/test split is feasible but its actual size and class coverage must be measured before training. CWE-held-out results test transfer to different weakness families, not familiar-CWE generalization. A separate real-world source is still required before any claim about production-code detection. Generated names/comments must be removed from features without removing security-relevant operators, APIs, constants, or control flow. If Phase 2 finds that groups collapse or labels do not survive closer inspection, reopen this choice before training.
+
 ### Small parser feasibility check
 
 For a preliminary check, we extracted 20 deterministic `_01` source files into `/tmp` (10 C and 10 C++, selected by sorted CWE/name) along with Juliet's support headers and ran local Clang 18 in syntax-only mode. **16 of 20 parsed**. Three failures involved Windows-only APIs/headers (`HMODULE`, `winsock2.h`, `windows.h`) on this Linux host; one used an old C++ dynamic exception specification rejected by Clang's default C++17 mode. This is a deliberately small, alphabetically biased sample, **not** an estimate of full parser coverage. The full audit must record platform/compiler mode and per-file failure reasons; unsupported files cannot silently become negative examples.
@@ -91,18 +117,17 @@ Juliet remains useful for a controlled parser and model experiment, but a good J
 
 ## Candidate B: Big-Vul
 
-The [author repository](https://github.com/nqaisme/big-vul-dataset) describes C/C++ vulnerability records, source changes, and linked function exports. Its README describes `func_before`, `func_after`, changed lines, and a `vul` field. The repository shows an MIT license. We have **not** downloaded or sampled the export, verified the exact license of every source-code snippet, checked available repository/commit IDs in the function file, or counted duplicates. It is a candidate primary real-world dataset or separate external evaluation set, not yet selected for either role.
+The [author-described cleaned function export](https://github.com/kchabra/Big-Vul/blob/master/README.md) is now present as `data/raw/big-vul/MSR_data_cleaned.zip`. Its SHA-256 is `be96d4133fe4e75a2c5dd3f36eae22939612083cd1f7bcaa3bb5ce782316e0f2`; ZIP integrity passed. The 188,636 rows have explicit `func_before`, `func_after`, `vul`, `project`, and `commit_id` fields. The labels are proxies based on changed lines in vulnerability fixes, not proof that every `vul=0` function is safe. Of the source rows, 10,900 are positive. The [Phase 5 report](phase-5-generalization.md) records exact duplicate/conflict counts, missing provenance, the 17,189-row deterministic external sample, and frozen Juliet-model results. Upstream rights for individual code snippets and full patch-family/near-duplicate relationships remain unverified.
 
 ## Candidate C: CodeXGLUE / Devign
 
 The [defect-detection task](https://github.com/microsoft/CodeXGLUE/tree/main/Code-Code/Defect-detection) documents function-level `func` and binary `target` fields and a train/validation/test release. [CodeXGLUE](https://github.com/microsoft/CodeXGLUE) states that its code and dataset use different licenses (MIT for code, C-UDA for data). We have **not** checked the underlying source metadata or license implications for our use, nor audited duplicates or repository separation. It remains an alternative benchmark, not a source to merge automatically.
 
-## Decision needed after acquisition
+## Remaining checks after acquisition
 
 1. Record the local acquisition date and preserve the verified ZIP unchanged. The official source, release, published SHA-256, rights statement, ZIP integrity, file counts, and archive-level exact duplicates have been checked.
-2. Map manifest flaw lines to parsed function spans, then measure retained positive and defensible negative function counts, C versus C++ counts, parse success, function-level exact/near duplicates, conflicting labels, and provenance completeness.
-3. Manually inspect examples from positive, negative, multi-file, and unusual categories. Verify where the flaw actually resides before assigning function labels.
-4. Write the inclusion/exclusion rules and a group-aware split proposal. Check whether there are enough independent positive and negative groups for validation and test.
-5. Select the first training dataset and a **separate** real-world generalization test. If the label rule cannot be defended, change the source choice before training.
+2. Map manifest flaws and fixed-sink counterparts for the chosen `_01` subset; the candidate counts above satisfy this for that subset. Full Juliet and multi-file styles remain unaudited.
+3. Measure normalized near duplicates, confirm split groups and retained counts after deduplication, and broaden manual review in Phase 2.
+4. Audit a **fresh** real-world C/C++ test source before making a confirmatory claim for any new model trained or tuned using Big-Vul.
 
-The dataset decision is **open**. Archive-level counts and source-file duplicates do not satisfy the function-level label and split gate. No model training should use a source merely because it is listed in the idea document.
+The first synthetic experiment source was selected as described above. Big-Vul has supplied a separate transfer check; the Juliet model failed that check and remains disabled. Any new model needs its own leakage-aware split and fresh final evaluation.

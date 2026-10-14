@@ -90,9 +90,19 @@ def map_flaw_lines(bodies: list[dict[str, object]], flaw_lines: list[int]) -> di
     return {"matched": matched, "unmatched": unmatched, "ambiguous": ambiguous}
 
 
-def _sample_paths(archive: ZipFile, per_language: int) -> list[str]:
+def select_paths(names: list[str], per_language: int, all_01: bool = False) -> list[str]:
+    """Choose deterministic single-file-style `_01` sources."""
+
+    if all_01:
+        return [
+            path for path in sorted(set(names))
+            if path.startswith("C/testcases/")
+            and len(path.split("/")) >= 4
+            and Path(path).suffix.lower() in {".c", ".cpp"}
+            and Path(path).stem.endswith("_01")
+        ]
     choices: dict[str, dict[str, str]] = {".c": {}, ".cpp": {}}
-    for path in sorted(archive.namelist()):
+    for path in sorted(set(names)):
         parts = path.split("/")
         if len(parts) < 4 or parts[:2] != ["C", "testcases"] or not Path(path).stem.endswith("_01"):
             continue
@@ -123,14 +133,19 @@ def _manifest_lines(archive: ZipFile, selected: list[str]) -> dict[str, list[int
     return result
 
 
-def audit_sample(archive_path: Path, per_language: int, expected_sha256: str | None = None) -> dict[str, object]:
+def audit_sample(
+    archive_path: Path,
+    per_language: int,
+    expected_sha256: str | None = None,
+    all_01: bool = False,
+) -> dict[str, object]:
     if per_language < 1:
         raise ValueError("per-language must be positive")
     if expected_sha256 and _file_sha256(archive_path) != expected_sha256.lower():
         raise ValueError("archive SHA-256 mismatch")
 
     with ZipFile(archive_path) as archive, tempfile.TemporaryDirectory(prefix="vulnscope_juliet_") as tmp:
-        selected = _sample_paths(archive, per_language)
+        selected = select_paths(archive.namelist(), per_language, all_01)
         flaw_lines = _manifest_lines(archive, selected)
         root = Path(tmp)
         support_dir = root / "C" / "testcasesupport"
@@ -170,8 +185,11 @@ def audit_sample(archive_path: Path, per_language: int, expected_sha256: str | N
 
     parsed = [entry for entry in files if entry["parse_ok"]]
     return {
-        "sample_rule": "first sorted _01 file per CWE, up to per_language for each C/C++",
-        "per_language": per_language,
+        "sample_rule": (
+            "all _01 C/C++ source files" if all_01
+            else "first sorted _01 file per CWE, up to per_language for each C/C++"
+        ),
+        "per_language": None if all_01 else per_language,
         "sampled_files": len(files),
         "parsed_files": len(parsed),
         "failed_files": len(files) - len(parsed),
@@ -188,10 +206,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("archive", type=Path)
     parser.add_argument("--per-language", type=int, default=10)
+    parser.add_argument("--all-01", action="store_true", help="audit every _01 source file")
     parser.add_argument("--expected-sha256")
     args = parser.parse_args(argv)
     try:
-        report = audit_sample(args.archive, args.per_language, args.expected_sha256)
+        report = audit_sample(args.archive, args.per_language, args.expected_sha256, args.all_01)
     except (OSError, ValueError, ET.ParseError, json.JSONDecodeError) as error:
         print(f"function audit failed: {error}", file=sys.stderr)
         return 2

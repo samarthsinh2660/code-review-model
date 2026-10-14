@@ -1,6 +1,6 @@
 # VulnScope architecture: from source code to a review finding
 
-**Status:** Proposed design for review, 2026-10-13. This explains how we intend to build the system; no component described here has been implemented yet. It follows the [idea](idea.md), [phase roadmap](phases.md), [resource inventory](resources.md), and [ML methodology](ml-methodology.md).
+**Status:** Architecture design recorded 2026-10-13. The data audit, grouped preparation, lexical/AST features, and custom logistic/MLP experiments now exist; the scanner and validated multi-language models do not. Current measured status is in the [phase roadmap](phases.md). This design follows the [idea](idea.md), [resource inventory](resources.md), and [ML methodology](ml-methodology.md).
 
 ## 1. What we are building
 

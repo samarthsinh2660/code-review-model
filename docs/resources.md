@@ -1,26 +1,26 @@
 # VulnScope resource inventory
 
-**Checked:** 2026-10-13. This is a resource map for the full [phase roadmap](phases.md) and [ML methodology](ml-methodology.md), not a claim that every dataset is already usable. Record exact release, retrieval date, license terms, file hash, and retained sample counts during each dataset audit. Links and upstream terms can change.
+**Checked:** 2026-10-14. This is a resource map for the full [phase roadmap](phases.md) and [ML methodology](ml-methodology.md), not a claim that every dataset is already usable. Record exact release, retrieval date, license terms, file hash, and retained sample counts during each dataset audit. Links and upstream terms can change.
 
 ## 1. Resources needed to begin
 
 | Resource | Purpose | Status |
 |---|---|---|
 | [Python](https://www.python.org/downloads/) and [venv](https://docs.python.org/3/library/venv.html) | Training, data pipeline, CLI, and optional API | Python 3.12.3 is installed locally; project version policy still needs to be pinned |
-| [NumPy](https://numpy.org/doc/stable/) | Array operations for classifiers implemented by us | Selected; package/version not installed or pinned by this repo |
-| [pytest](https://docs.pytest.org/en/stable/) | Tests for data, gradients, persistence, and inference | Selected; package/version not installed or pinned by this repo |
+| [NumPy](https://numpy.org/doc/stable/) | Array operations for classifiers implemented by us | Declared as `numpy>=2.0,<3` in `pyproject.toml`; custom model tests and training run locally |
+| Python `unittest` | Tests for data, gradients, persistence, and evaluation | Standard-library runner used by the project; no pytest dependency required |
 | [Git](https://git-scm.com/doc) | Versioned code and experiment configurations | Installed locally; this project directory now has a Git repository |
-| [NIST Juliet C/C++ 1.3](https://samate.nist.gov/SARD/test-suites/112) | First candidate for a controlled C/C++ benchmark | Official archive present, SHA-256 and ZIP integrity verified; function labels and duplicates still need audit (see [initial audit](dataset-audit.md)) |
+| [NIST Juliet C/C++ 1.3](https://samate.nist.gov/SARD/test-suites/112) | First controlled C/C++ benchmark | Official archive and retained `_01` function pairs audited; full suite remains unaudited (see [dataset audit](dataset-audit.md)) |
 | Storage for raw data, processed data, and artifacts | Keep immutable source copies and experiment outputs outside Git | About 157 GiB available on the local project filesystem at check time; actual dataset footprint must be measured |
 
-**First acquisition status:** The fixed Juliet release is now in ignored `data/raw/`; its SHA-256 matches the value `ada9d7e1c323d283446df3f55bdee0d00bda1fed786785fe98764d58688f38eb` on the [NIST page](https://samate.nist.gov/SARD/test-suites/112). The page states public-domain/CC0 terms. The [Juliet guide](https://samate.nist.gov/SARD/downloads/documents/Juliet_Test_Suite_v1.2_for_C_Cpp_-_User_Guide.pdf) describes wrappers, helper functions, and bad-only cases, and the archive manifest supplies flaw lines. See [the measured audit](dataset-audit.md). Function labels still need parser-backed inspection before training.
+**First acquisition status:** The fixed Juliet release is in ignored `data/raw/`; its SHA-256 matches the value `ada9d7e1c323d283446df3f55bdee0d00bda1fed786785fe98764d58688f38eb` on the [NIST page](https://samate.nist.gov/SARD/test-suites/112). The page states public-domain/CC0 terms. The [Juliet guide](https://samate.nist.gov/SARD/downloads/documents/Juliet_Test_Suite_v1.2_for_C_Cpp_-_User_Guide.pdf) describes wrappers, helper functions, and bad-only cases, and the archive manifest supplies flaw lines. See [the measured audit](dataset-audit.md) for the parser-backed `_01` subset.
 
 ## 2. Dataset and advisory sources
 
 | Resource | Use in project | Access and rights check | Phase |
 |---|---|---|---|
 | [Juliet C/C++ 1.3](https://samate.nist.gov/SARD/test-suites/112) | Synthetic C/C++ positive/negative cases, CWE organization, first parser and split audit | Download and checksum on official page; public-domain/CC0 statement there. Derive function labels carefully, especially multi-file cases. | 1–5 |
-| [Big-Vul author repository](https://github.com/nqaisme/big-vul-dataset) | Real-world C/C++ vulnerable/fixed functions and patch metadata; candidate external test | Repository has CSV and author-linked function exports; repository shows MIT license. Check the downloaded file's provenance and redistribution terms before reuse. | 1, 5 |
+| [Big-Vul author repository](https://github.com/kchabra/Big-Vul) | Real-world C/C++ vulnerable/fixed functions and patch metadata; external transfer test | Cleaned function ZIP supplied and audited (see [Phase 5](phase-5-generalization.md)); repository shows MIT, but upstream snippet rights remain unverified. | 1, 5 |
 | [CodeXGLUE defect detection / Devign](https://github.com/microsoft/CodeXGLUE/tree/main/Code-Code/Defect-detection) | Alternative C/C++ benchmark and comparison | Task page gives function-level JSONL and a download route. [CodeXGLUE](https://github.com/microsoft/CodeXGLUE) states code is MIT and datasets are under C-UDA; review dataset terms and split metadata. | 1, 5 |
 | [JsVul repository](https://github.com/jsvul/jsvul) and [linked Zenodo release](https://doi.org/10.5281/zenodo.18195838) | Candidate JS/TS function-level vulnerable/fixed data and curation method | Repository states GPLv3 for its code and links to Zenodo. The Zenodo record could not be opened during this check; verify release availability, data-specific license, files, hashes, and upstream rights in Phase 7. | 7 |
 | [SecBench.JS author repository](https://github.com/cristianstaicu/SecBench.js) | Targeted JavaScript benchmark/evaluation cases | Author repository is reachable; review individual package licenses and benchmark use terms before copying data. The original URL in `idea.md` returned 404 and has been corrected. | 7 |
@@ -30,7 +30,7 @@
 | [NVD API](https://nvd.nist.gov/developers/vulnerabilities) | CVE/CWE metadata and references | Metadata enrichment only; inspect API rules when used. | 7–8 |
 | [MITRE CWE list](https://cwe.mitre.org/data/index.html) | Consistent weakness names and category hierarchy | Use as a taxonomy reference, not as labelled source code. | 1, 7–9 |
 
-**Dataset decision:** Juliet is the initial candidate for the first controlled experiment; Big-Vul or a repository-held-out real-world source should test transfer. These sources must remain distinct until labels, duplicates, and licenses have been audited. Devign is an alternative benchmark, not extra training data by default.
+**Dataset decision:** Juliet supplied the first controlled experiment. Big-Vul supplied the separate transfer test and exposed poor generalization of the Juliet model. These sources remain distinct; a new real-world model needs its own split and fresh final test. Devign is an alternative benchmark, not extra training data by default.
 
 ## 3. Parsing and feature resources
 
@@ -70,7 +70,7 @@ For every dataset or downloaded artifact, record: source URL, exact release or c
 ## 7. Open checks before implementation uses external data
 
 1. Juliet's archive hash and manifest line bounds are verified. Map flaw lines to parsed functions and audit safe counterparts before assigning function-level labels or groups.
-2. Confirm Big-Vul export accessibility, exact file schema, project/commit metadata, and the terms covering the chosen copy.
+2. Verify upstream code-snippet rights and patch-family/near-duplicate relationships in the acquired Big-Vul export before using it to train a new model.
 3. Confirm the JsVul Zenodo release resolves, identify its data license, and inspect the JSONL schema; the linked record was inaccessible during this inventory.
 4. Decide whether SecBench.JS cases are suitable for static function-level evaluation; executable exploit cases may need different scoring.
 5. Decide whether Go advisories contain enough traceable patch/function evidence for defensible labels. Keep Go model training and scanner support gated on that audit.
