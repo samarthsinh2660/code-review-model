@@ -4,7 +4,7 @@ VulnScope is a research prototype for custom-trained, function-level source-code
 
 ## Current status
 
-The foundation and first C/C++ data pipeline are implemented. Custom NumPy logistic and MLP experiments, plus an AST comparison, have run. The Juliet-trained model transferred poorly to Big-Vul. A new Big-Vul C baseline improved on a fresh project-held-out test, but its alert burden and data limits keep it **disabled as a scanner**. Read the [phase roadmap](docs/phases.md), [dataset audit](docs/dataset-audit.md), [transfer report](docs/phase-5-generalization.md), and [real-world C baseline](docs/phase-5b-real-world-baseline.md).
+The foundation and first C/C++ data pipeline are implemented. Custom NumPy logistic and MLP experiments, plus an AST comparison, have run. The Juliet-trained model transferred poorly to Big-Vul. A Big-Vul C baseline was evaluated on fresh project-held-out functions. A 5% validation alert-budget policy reduced review volume on a second fresh cohort, but a function-length-only ranking nearly matched the model, so the detector remains **disabled as a scanner**. Read the [phase roadmap](docs/phases.md), [dataset audit](docs/dataset-audit.md), [transfer report](docs/phase-5-generalization.md), [real-world C baseline](docs/phase-5b-real-world-baseline.md), and [validation study](docs/phase-5c-c-validation.md).
 
 ## Requirements and setup
 

@@ -14,7 +14,7 @@ from vulnscope.logistic import LogisticModel
 
 
 class BigVulHoldoutTests(unittest.TestCase):
-    def fixture(self, root):
+    def fixture(self, root, remainder=1):
         root = Path(root)
         prepared = root / "prepared"; prepared.mkdir()
         model_dir = root / "model"; model_dir.mkdir()
@@ -38,7 +38,7 @@ class BigVulHoldoutTests(unittest.TestCase):
         value = 0
         while len(codes) < 2:
             code = f"int f{value}() {{ return {value}; }}"
-            if int(normalized_hash(code)[:16], 16) % 10 == 1:
+            if int(normalized_hash(code)[:16], 16) % 10 == remainder:
                 codes.append(code)
             value += 1
         rows = [{"source_id": f"test-{i}", "repository": "test-repo", "commit": "fix",
@@ -46,7 +46,7 @@ class BigVulHoldoutTests(unittest.TestCase):
                 for i, code in enumerate(codes)]
         source.write_text("\n".join(json.dumps(row) for row in rows) + "\n")
         audit = root / "test_audit.json"
-        audit.write_text(json.dumps({"archive_sha256": "a" * 64, "sample_modulus": 10, "sample_remainder": 1,
+        audit.write_text(json.dumps({"archive_sha256": "a" * 64, "sample_modulus": 10, "sample_remainder": remainder,
                                      "output_sha256": hashlib.sha256(source.read_bytes()).hexdigest()}))
         return source, audit, train_audit, prepared, model_dir, root / "result.json"
 
@@ -75,6 +75,35 @@ class BigVulHoldoutTests(unittest.TestCase):
             bundle_path.write_text(json.dumps(bundle))
             with self.assertRaisesRegex(ValueError, "project roles overlap"):
                 run(*args)
+
+    def test_budget_policy_requires_remainder_two_and_matching_artifacts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = self.fixture(directory, remainder=2)
+            np.savez_compressed(args[3] / "features.npz", X_validation=np.array([[1.0]]))
+            policy_path = Path(directory) / "policy.json"
+            policy = {
+                "policy_version": "bigvul-c-budget-5pct-v1", "threshold": 0.7,
+                "test_sample_modulus": 10, "test_sample_remainder": 2,
+                "prepared_manifest_sha256": hashlib.sha256((args[3] / "manifest.json").read_bytes()).hexdigest(),
+                "features_sha256": hashlib.sha256((args[3] / "features.npz").read_bytes()).hexdigest(),
+                "model_sha256": hashlib.sha256((args[4] / "model.npz").read_bytes()).hexdigest(),
+                "bundle_sha256": hashlib.sha256((args[4] / "bundle.json").read_bytes()).hexdigest(),
+            }
+            policy_path.write_text(json.dumps(policy))
+            result = run(*args, policy_path=policy_path)
+            self.assertEqual(result["policy_version"], policy["policy_version"])
+            self.assertEqual(result["threshold"], 0.7)
+            policy["test_sample_remainder"] = 1
+            policy_path.write_text(json.dumps(policy))
+            with self.assertRaisesRegex(ValueError, "alert policy"):
+                run(*args, policy_path=policy_path)
+            policy["test_sample_remainder"] = 2
+            policy_path.write_text(json.dumps(policy))
+            args[1].write_text(json.dumps({"archive_sha256": "a" * 64, "sample_modulus": 10,
+                                           "sample_remainder": 1,
+                                           "output_sha256": hashlib.sha256(args[0].read_bytes()).hexdigest()}))
+            with self.assertRaisesRegex(ValueError, "test hash cohort"):
+                run(*args, policy_path=policy_path)
 
 
 if __name__ == "__main__":

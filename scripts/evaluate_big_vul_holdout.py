@@ -27,6 +27,7 @@ def _metrics(labels: np.ndarray, scores: np.ndarray, threshold: float) -> dict[s
 def run(
     source: Path, test_audit: Path, train_audit: Path,
     prepared_dir: Path, model_dir: Path, result_path: Path,
+    *, policy_path: Path | None = None,
 ) -> dict[str, object]:
     """Require an intact frozen bundle and the reserved project/hash cohort."""
 
@@ -34,6 +35,19 @@ def run(
     manifest = json.loads(manifest_path.read_text())
     bundle = json.loads((model_dir / "bundle.json").read_text())
     model_path = model_dir / "model.npz"
+    policy = None
+    expected_remainder = 1
+    if policy_path is not None:
+        policy = json.loads(policy_path.read_text())
+        expected_remainder = 2
+        if (policy.get("policy_version") != "bigvul-c-budget-5pct-v1"
+                or policy.get("test_sample_modulus") != 10
+                or policy.get("test_sample_remainder") != expected_remainder
+                or policy.get("prepared_manifest_sha256") != _sha256(manifest_path)
+                or policy.get("features_sha256") != _sha256(prepared_dir / "features.npz")
+                or policy.get("model_sha256") != _sha256(model_path)
+                or policy.get("bundle_sha256") != _sha256(model_dir / "bundle.json")):
+            raise ValueError("alert policy does not match frozen training artifacts")
     if _sha256(manifest_path) != bundle.get("prepared_manifest_sha256"):
         raise ValueError("prepared manifest hash does not match bundle")
     if _sha256(model_path) != bundle.get("model_sha256"):
@@ -42,9 +56,9 @@ def run(
         raise ValueError("training audit hash does not match manifest")
     train_audit_data = json.loads(train_audit.read_text())
     test_audit_data = json.loads(test_audit.read_text())
-    if (test_audit_data.get("sample_modulus") != manifest.get("test_sample_modulus")
-            or test_audit_data.get("sample_remainder") != manifest.get("test_sample_remainder")
-            or test_audit_data.get("sample_remainder") != 1
+    if (test_audit_data.get("sample_modulus") != 10
+            or test_audit_data.get("sample_remainder") != expected_remainder
+            or (policy is None and manifest.get("test_sample_remainder") != expected_remainder)
             or test_audit_data.get("output_sha256") != _sha256(source)):
         raise ValueError("test hash cohort does not match frozen manifest")
     if train_audit_data.get("archive_sha256") != test_audit_data.get("archive_sha256"):
@@ -62,7 +76,7 @@ def run(
         raise ValueError("invalid frozen vocabulary")
     if vocabulary_tokens != manifest.get("vocabulary"):
         raise ValueError("bundle vocabulary does not match training manifest")
-    threshold = bundle.get("threshold")
+    threshold = bundle.get("threshold") if policy is None else policy.get("threshold")
     if type(threshold) not in (float, int) or not np.isfinite(threshold) or not 0 <= threshold <= 1:
         raise ValueError("invalid frozen threshold")
     model = LogisticModel.load(model_path)
@@ -70,7 +84,7 @@ def run(
         raise ValueError("model feature count does not match vocabulary")
     all_records = load_external_jsonl(source)
     for record in all_records:
-        if int(record.normalized_sha256[:16], 16) % 10 != 1:
+        if int(record.normalized_sha256[:16], 16) % 10 != expected_remainder:
             raise ValueError("test row is outside frozen hash cohort")
     records = [record for record in all_records if record.language == "c" and record.repository in roles["test"]]
     if not records:
@@ -86,8 +100,10 @@ def run(
         by_project_indices[record.repository].append(index)
     overall = _metrics(labels, scores, threshold)
     result = {
-        "evaluation_type": "fresh-project-held-out-big-vul-c",
+        "evaluation_type": "fresh-project-held-out-big-vul-c" if policy is None else "fresh-project-held-out-big-vul-c-budget",
         "model_version": bundle.get("model_version"),
+        "policy_version": None if policy is None else policy["policy_version"],
+        "policy_sha256": None if policy is None else _sha256(policy_path),
         "source_sha256": _sha256(source),
         "test_audit_sha256": _sha256(test_audit),
         "prepared_manifest_sha256": _sha256(manifest_path),
